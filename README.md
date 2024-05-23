@@ -22,7 +22,7 @@ import numpy as np
 import matplotlib.pyplot as plt               
 import nevergrad as ng                        
 ```
-Next we define our objective/loss/cost function to minimize. You have a lot of freedom here, in this case its just the sum of squared errors between a `target` vector and the optimizer's solution.
+Next we define our objective/loss/cost function to minimize. You have **a lot** of freedom here, in this case its just the sum of squared errors between a `target` vector and the optimizer's solution. If you need to set upper/lower bounds, or have more complicated parameter needs, please see the next section of the tutorial after reading this one.
 
 ```
 def objFun(x: list[float]) -> float:
@@ -71,21 +71,88 @@ plt.xlabel("Budget")
 plt.ylabel("Loss")
 ```
 ![Loss](/Assets/loss_1.png)
-
-
 </details>
 
 <details>
-<summary> Objective function with multiple parameter types </summary>
-m
+<summary> Complex parameters </summary>
+  
+Typically our objective function takes more than one parameter, and/or the parameters are of different types. Note this is **NOT** the same thing as multiple objective functions (which must be optimized at the same time), we deal with this case in the last section of the tutorial.
+
+We have several parameter types to choose from:
+
+|Parameter type|Description|
+| --- | --- |
+|nevergrad.p.Instrumentation|A container to ease the use of multi-parameter functions (example below).|
+|nevergrad.p.Array|An array of any value type.|
+|nevergrad.p.Scalar|Parameter representing a scalar.|
+|nevergrad.p.Log|Positive log-scaled variable.|
+|nevergrad.p.Dict|A parameter that holds other parameters. The keys are the parameter names.|
+|nevergrad.p.Tuple|A tuple, that may contain other parameters as elements.|
+|nevergrad.p.Choice|Random choice of list of categorical options.|
+|nevergrad.p.TransitionChoice|Basically a discrete-time Markov chain, a list of values and transition weights.|
+
+In general the parameters have arguments like:
+* init (optional float) – initial value
+* lower (optional float) – minimum value
+* upper (optional float) – maximum value
+
+You can force integers by using `.set_integer_casting()` on the parameter object. Note: internally, all nevergrad parameters are centered and scaled to $\mathcal{N}(0, 1)$.
+
+An example of a parameter definition of a 2D array of possible integer values from 0 to 10:
+```
+param = ng.p.Array(init=(5,5), lower=(0,0), upper=(10,10)).set_integer_casting()
+```
+
+We can combine parameters together using instrumentations (useful when we have keywords, tuples, or dicts), to produce multi-parameter functions. Example from the template:
+
+```
+a = ng.p.Scalar(50, lower=1, upper=100).set_integer_casting()
+b = ng.p.Scalar(50, lower=1, upper=100).set_integer_casting()
+instrum = ng.p.Instrumentation(a, b, c="not_used")
+opt = ng.optimizers.DE(parametrization=instrum, budget=500)
+```
+
+The output of which will be a tuple, where the first element is a tuple of regular arguments, and the second is a dictionary of keyword arguments, e.g.
+
+```
+((a_value, b_value), {'c': 'not_used'})
+```
+
 </details>
 
 <details>
 <summary> Parallelization </summary>
-m
+To implement concurrent computing we make a few simple changes to the basic script. First, we need a parallel computing package: we can either use `multiprocessing` or `concurrent`, the latter being a bit simpler to use.
+
+```
+from concurrent import futures
+```
+Second, we have to encapsulate the code in an `main()` function, and add the common boilerplate at the bottom:
+
+```
+if __name__ == '__main__':
+    main()
+```
+Next, we add the number of workers we want as an argument to the optimizer object creation. Note: you can find your cpu core count by running `print(os.cpu_count())`.
+
+```
+opt = ng.optimizers.DE(parametrization=2, budget=500, num_workers=20)
+```
+
+Finally, we run the minimization using a ProcessPoolExecutor. This was chosen because our code is cpu-bound; it's possible that your algorithm may be IO (input/output bound), if it needs to perform costly read or write operations. In this latter case, replace `ProcessPoolExecutor` with `ThreadPoolExecutor`.
+
+```
+ with futures.ProcessPoolExecutor(max_workers=opt.num_workers) as executor:
+        res = opt.minimize(objFun, executor=executor, batch_mode=True)
+```
+The argument `batch_mode=True` means that `num_workers` evaluations are launched, and only when all are finished does another batch get launched. This is currently recommended in the docs.
+
 </details>
 
 <details>
 <summary> Multiple objective functions </summary>
 m
 </details>
+
+## Further reading 
+
