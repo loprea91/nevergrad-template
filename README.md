@@ -2,16 +2,21 @@
 ## Intro
 Nevergrad is a gradient-free optimization toolbox created by Facebook Research, and written in Python. At the moment it contains 269 optimizers, and is being actively updated with new ones.
 
+The largest advantage is that you can very easily add it to any existing code!
+
 Check out their [github](https://github.com/facebookresearch/nevergrad) and [documentation](https://facebookresearch.github.io/nevergrad/).
 
 \- Lawrence
+
 ## Installation
 You can use nevergrad with any Python 3.6+ kernel.
+
 `pip install nevergrad` or `conda install -c conda-forge nevergrad`
+
 I haven't noticed any peculiarities between Windows or Linux installations.
 
 ## How to use
-I'm going to separate the templates from the simplest use case to the most complicated. Going through them should give you a good idea how to customize the code to your needs. The templates are fully runable, containing test data.
+I'm going to separate the templates from the simplest use case to the most complicated. Going through them should give you a good idea how to customize the code to your needs. The templates are fully runable, containing test examples.
   
 <details>
 <summary>One objective function</summary>
@@ -151,8 +156,48 @@ The argument `batch_mode=True` means that `num_workers` evaluations are launched
 
 <details>
 <summary> Multiple objective functions </summary>
-m
+Sometimes you may want to optimize two different metrics at the same time. Of course, it is often the case that both metrics are NOT fully optimal for the same parameter values. In the language of multi-objective optimization problems (MOOs), the goal is the indentification of the Pareto front:
+  
+![Pareto](/Assets/pareto.jpg)
+
+The solutions along the Pareto front *cannot be improved without DECREASING the optimality of one of the objective functions*. Nevegrad will return the solution closest to the origin (in some n-dimensional loss space).
+
+ONLY THE DE OPTIMIZER FAMILY IS ACTUALLY DOING THIS CALCULATION. The other optimizers are not yet fully implementing MOOs.
+
+We define out MOO function with two return values in a list:
+```
+def multiobjective(a: int, b: int, c: int ) -> float:
+    return [abs(a/b - np.pi), abs(c/b - np.e)]
+```
+In this example we're looking for 3 integers, such that (a/b) is close to pi, and (c/b) is close to e. 
+
+We define the parameters as in the multi-parameter template.
+
+```
+a = ng.p.Scalar(25, lower=1, upper=50).set_integer_casting()
+b = ng.p.Scalar(25, lower=1, upper=50).set_integer_casting()
+c = ng.p.Scalar(25, lower=1, upper=50).set_integer_casting()
+instrum = ng.p.Instrumentation(a, b, c)
+```
+The optimizer is constructed normally afterward.
+```
+opt = ng.optimizers.DE(parametrization=instrum, budget=400)
+opt.minimize(multiobjective)
+```
+The last bit of code in the template displays the Pareto front
+
+```
+vals = [str(pfm.value[0]) for pfm in opt.pareto_front()]
+losses = np.vstack([pfm.losses for pfm in opt.pareto_front()])
+# Plot the Pareto front    
+plt.scatter(losses[:,0], losses[:,1]) 
+for i, val in enumerate(vals):
+    plt.text(losses[i,0], losses[i,1], val, fontsize=6)
+```
+![front](/Assets/front_example.png)
+
 </details>
 
 ## Further reading 
 
+Decent article on when you'd want to use gradient-free methods [here](https://openmdao.github.io/PracticalMDO/Notebooks/Optimization/when_to_use_gradient_free_methods.html).
