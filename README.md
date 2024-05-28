@@ -160,7 +160,7 @@ Sometimes you may want to optimize two different metrics at the same time. Of co
   
 ![Pareto](/Assets/pareto.jpg)
 
-The solutions along the Pareto front *cannot be improved without DECREASING the optimality of one of the objective functions*. Nevegrad will return the solution closest to the origin (in some n-dimensional loss space).
+The solutions along the Pareto front *cannot be improved without DECREASING the optimality of one of the objective functions*.
 
 ONLY THE DE OPTIMIZER FAMILY IS ACTUALLY DOING THIS CALCULATION. The other optimizers are not yet fully implementing MOOs.
 
@@ -202,4 +202,10 @@ for i, val in enumerate(vals):
 
 Decent article on when you'd want to use gradient-free methods [here](https://openmdao.github.io/PracticalMDO/Notebooks/Optimization/when_to_use_gradient_free_methods.html).
 
+
 See also Sam's excellent example script [here](https://github.com/mullerlab/NETSIM-dev/blob/master/analysis/python/test_nevergrad.py).
+
+## To-do
+
+* Recurrent neural network optimization example/template
+* Tell/Ask API template
