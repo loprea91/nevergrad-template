@@ -201,3 +201,5 @@ for i, val in enumerate(vals):
 ## Further reading 
 
 Decent article on when you'd want to use gradient-free methods [here](https://openmdao.github.io/PracticalMDO/Notebooks/Optimization/when_to_use_gradient_free_methods.html).
+
+See also Sam's excellent example script [here](https://github.com/mullerlab/NETSIM-dev/blob/master/analysis/python/test_nevergrad.py).
